@@ -1,0 +1,34 @@
+@{
+    ViewData["Title"] = "Two-Factor Authentication";
+    var rememberMe = ViewBag.RememberMe ?? false;
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="text-center">Two-Factor Authentication</h2>
+                </div>
+                <div class="card-body">
+                    <p>Please enter the 6-digit code from your authenticator app.</p>
+
+                    <form asp-action="Verify2FA" method="post">
+                        <div asp-validation-summary="All" class="text-danger"></div>
+
+                        <div class="mb-3">
+                            <label for="verificationCode" class="form-label">Verification Code</label>
+                            <input type="text" name="verificationCode" id="verificationCode" class="form-control" maxlength="6" pattern="[0-9]{6}" required autofocus />
+                        </div>
+
+                        <input type="hidden" name="rememberMe" value="@rememberMe" />
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">Verify</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

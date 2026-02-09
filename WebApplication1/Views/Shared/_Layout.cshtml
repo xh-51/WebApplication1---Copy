@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Ace Job Agency</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gothic-bg: #0a0a0a;
+            --gothic-surface: #262626;
+            --gothic-border: #404040;
+            --gothic-accent: #737373;
+            --gothic-accent-hover: #a3a3a3;
+            --gothic-gold: #c0c0c0;
+            --gothic-text: #ffffff;
+            --gothic-muted: #d4d4d4;
+        }
+        body {
+            font-family: 'Crimson Text', Georgia, serif;
+            background-color: var(--gothic-bg);
+            color: var(--gothic-text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        main {
+            flex: 1 0 auto;
+            padding-bottom: 6rem;
+        }
+        .font-display { font-family: 'Cinzel', serif; }
+        .navbar-gothic {
+            background-color: var(--gothic-surface) !important;
+            border-bottom: 1px solid var(--gothic-border);
+        }
+        .navbar-gothic .navbar-brand {
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            color: var(--gothic-gold) !important;
+            font-size: 1.35rem;
+        }
+        .navbar-gothic .nav-link {
+            color: var(--gothic-muted) !important;
+            font-weight: 500;
+        }
+        .navbar-gothic .nav-link:hover { color: var(--gothic-text) !important; }
+        .btn-gothic-primary {
+            background-color: var(--gothic-gold);
+            border: none;
+            color: #0a0a0a;
+            font-family: 'Cinzel', serif;
+        }
+        .btn-gothic-primary:hover {
+            background-color: var(--gothic-muted);
+            color: #0a0a0a;
+        }
+        .btn-gothic-outline {
+            background: transparent;
+            border: 1px solid var(--gothic-border);
+            color: var(--gothic-text);
+        }
+        .btn-gothic-outline:hover {
+            border-color: var(--gothic-muted);
+            color: var(--gothic-text);
+        }
+        footer.gothic-footer {
+            flex-shrink: 0;
+            background-color: var(--gothic-surface);
+            border-top: 1px solid var(--gothic-border);
+            color: var(--gothic-muted);
+        }
+        .hero-gothic {
+            background-color: var(--gothic-bg);
+            background-image: linear-gradient(180deg, transparent 0%, rgba(17,17,17,0.97) 100%), linear-gradient(rgba(60,60,60,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(60,60,60,0.15) 1px, transparent 1px);
+            background-size: 100% 100%, 48px 48px, 48px 48px;
+        }
+        /* Gothic form styles for Register / Login */
+        .card-gothic {
+            background: var(--gothic-surface);
+            border: 1px solid var(--gothic-border);
+            border-radius: 0.5rem;
+        }
+        .card-gothic .card-header-gothic {
+            background: rgba(115, 115, 115, 0.2);
+            border-bottom: 1px solid var(--gothic-border);
+            color: var(--gothic-gold);
+            font-family: 'Cinzel', serif;
+            padding: 1rem 1.5rem;
+        }
+        .card-gothic .card-body { color: var(--gothic-text); }
+        .form-control-gothic, .form-select-gothic {
+            background: var(--gothic-bg);
+            border: 1px solid var(--gothic-border);
+            color: var(--gothic-text);
+        }
+        .form-control-gothic:focus, .form-select-gothic:focus {
+            background: var(--gothic-bg);
+            border-color: var(--gothic-gold);
+            color: var(--gothic-text);
+            box-shadow: 0 0 0 0.2rem rgba(192, 192, 192, 0.25);
+        }
+        .form-control-gothic::placeholder { color: var(--gothic-muted); }
+        .form-label-gothic { color: var(--gothic-muted); }
+        .alert-gothic-info {
+            background: rgba(115, 115, 115, 0.2);
+            border: 1px solid var(--gothic-border);
+            color: var(--gothic-text);
+        }
+        .alert-gothic-warning {
+            background: rgba(163, 163, 163, 0.15);
+            border: 1px solid var(--gothic-gold);
+            color: var(--gothic-text);
+        }
+        .alert-gothic-danger {
+            background: rgba(127, 29, 29, 0.4);
+            border: 1px solid #991b1b;
+            color: #fecaca;
+        }
+        .form-check-input-gothic {
+            background-color: var(--gothic-bg);
+            border-color: var(--gothic-border);
+        }
+        .form-check-input-gothic:checked {
+            background-color: var(--gothic-gold);
+            border-color: var(--gothic-gold);
+        }
+        .text-warning { color: var(--gothic-gold) !important; }
+        .border-warning { border-color: var(--gothic-gold) !important; }
+        .text-light { color: #fff !important; }
+        .text-muted { color: var(--gothic-muted) !important; }
+        .form-check-label-gothic { color: var(--gothic-muted); }
+        .link-gothic { color: var(--gothic-gold); }
+        .link-gothic:hover { color: var(--gothic-muted); }
+        /* Dashboard tabs */
+        .nav-tabs-gothic { border-bottom: 1px solid var(--gothic-border); }
+        .nav-tabs-gothic .nav-link {
+            color: var(--gothic-muted);
+            border: none;
+            border-bottom: 2px solid transparent;
+            padding: 0.75rem 1rem;
+        }
+        .nav-tabs-gothic .nav-link:hover { color: var(--gothic-text); }
+        .nav-tabs-gothic .nav-link.active {
+            color: var(--gothic-gold);
+            background: transparent;
+            border-bottom-color: var(--gothic-gold);
+        }
+        .dashboard-card {
+            background: var(--gothic-surface);
+            border: 1px solid var(--gothic-border);
+            border-radius: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-gothic py-3">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="@(User.Identity?.IsAuthenticated == true ? "/Dashboard" : "/")">
+                <span class="d-inline-flex align-items-center justify-content-center rounded-2 bg-dark border border-secondary" style="width:36px;height:36px;color:var(--gothic-gold);font-family:'Cinzel',serif;font-weight:700;">A</span>
+                Ace Job Agency
+            </a>
+            <button class="navbar-toggler border-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-3">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <li class="nav-item"><a class="nav-link" href="/Dashboard">Dashboard</a></li>
+                    }
+                    <li class="nav-item"><a class="nav-link" href="/">Jobs</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/">Resources</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/">For Employers</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/">Pricing</a></li>
+                </ul>
+                <div class="d-flex align-items-center gap-2">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <span class="text-muted me-2 small">Welcome, @User.Identity.Name</span>
+                        <form action="/Account/Logout" method="post" class="d-inline">@Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-gothic-outline btn-sm">Logout</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <a href="/Account/Register" class="btn btn-gothic-outline btn-sm rounded-2">Register</a>
+                        <a href="/Account/Login" class="btn btn-gothic-primary btn-sm rounded-2">Login</a>
+                    }
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main role="main">
+        @RenderBody()
+    </main>
+
+    <footer class="gothic-footer text-center py-4 mt-auto">
+        <div class="container">
+            <p class="mb-0 small">&copy; @DateTime.Now.Year Ace Job Agency. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

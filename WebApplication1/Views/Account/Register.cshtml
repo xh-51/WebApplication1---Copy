@@ -1,0 +1,174 @@
+@model WebApplication1.Models.RegisterViewModel
+@{
+    ViewData["Title"] = "Membership Registration - Ace Job Agency";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <div class="card card-gothic overflow-hidden">
+                <div class="card-header-gothic text-center">
+                    <h2 class="mb-0 font-display">Membership Registration</h2>
+                    <p class="small mb-0 mt-1 text-muted">Ace Job Agency</p>
+                </div>
+                <div class="card-body p-4">
+                    <div class="alert alert-gothic-info mb-4">
+                        <strong class="text-warning"><i class="bi bi-shield-check me-1"></i> Security</strong>
+                        <span class="text-muted small">CSRF protection, XSS prevention, encrypted data, server-side validation.</span>
+                    </div>
+
+                    <form action="/Account/Register" method="post" enctype="multipart/form-data">
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="All" class="alert alert-gothic-danger mb-4" role="alert"></div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="FirstName" class="form-label form-label-gothic"></label>
+                                <input asp-for="FirstName" class="form-control form-control-gothic" placeholder="First name" />
+                                <span asp-validation-for="FirstName" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="LastName" class="form-label form-label-gothic"></label>
+                                <input asp-for="LastName" class="form-control form-control-gothic" placeholder="Last name" />
+                                <span asp-validation-for="LastName" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Gender" class="form-label form-label-gothic"></label>
+                                <select asp-for="Gender" class="form-select form-select-gothic">
+                                    <option value="">— Select Gender —</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                                <span asp-validation-for="Gender" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="NRIC" class="form-label form-label-gothic"></label>
+                                <input asp-for="NRIC" class="form-control form-control-gothic" placeholder="S1234567A" />
+                                <span asp-validation-for="NRIC" class="text-danger small"></span>
+                                <small class="form-text text-muted">Format: S1234567A (encrypted)</small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Email" class="form-label form-label-gothic"></label>
+                                <input asp-for="Email" type="email" class="form-control form-control-gothic" placeholder="you@example.com" />
+                                <span asp-validation-for="Email" class="text-danger small"></span>
+                                <small class="form-text text-muted">Must be unique</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="DateOfBirth" class="form-label form-label-gothic"></label>
+                                <input asp-for="DateOfBirth" type="date" class="form-control form-control-gothic" />
+                                <span asp-validation-for="DateOfBirth" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Password" class="form-label form-label-gothic"></label>
+                                <input asp-for="Password" type="password" class="form-control form-control-gothic" id="password" onkeyup="checkPasswordStrength()" placeholder="Min 12 characters" />
+                                <span asp-validation-for="Password" class="text-danger small"></span>
+                                <div id="passwordStrength" class="mt-2 small"></div>
+                                <small class="form-text text-muted">Uppercase, lowercase, number, special char</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="ConfirmPassword" class="form-label form-label-gothic"></label>
+                                <input asp-for="ConfirmPassword" type="password" class="form-control form-control-gothic" id="confirmPassword" onkeyup="checkPasswordMatch()" placeholder="Confirm password" />
+                                <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                                <div id="passwordMatch" class="mt-2 small"></div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Resume" class="form-label form-label-gothic"></label>
+                            <input asp-for="Resume" type="file" class="form-control form-control-gothic" accept=".docx,.pdf" />
+                            <span asp-validation-for="Resume" class="text-danger small"></span>
+                            <small class="form-text text-muted">.docx or .pdf, max 5MB</small>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="WhoAmI" class="form-label form-label-gothic"></label>
+                            <textarea asp-for="WhoAmI" class="form-control form-control-gothic" rows="4" placeholder="Tell us about yourself..."></textarea>
+                            <span asp-validation-for="WhoAmI" class="text-danger small"></span>
+                        </div>
+
+                        <input type="hidden" name="recaptchaToken" id="recaptchaToken" />
+                        <div id="recaptcha-badge"></div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-gothic-primary btn-lg rounded-2 py-2" id="registerButton">Register</button>
+                        </div>
+                    </form>
+
+                    <div class="mt-4 pt-3 border-top border-secondary text-center">
+                        <p class="mb-0 small text-muted">Already have an account? <a asp-action="Login" class="link-gothic text-decoration-none">Login here</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script src="https://www.google.com/recaptcha/api.js?render=@ViewData["RecaptchaSiteKey"]"></script>
+    <script type="text/javascript">
+        var registerForm = document.getElementById('registerButton') ? document.getElementById('registerButton').closest('form') : document.querySelector('form[asp-action="Register"]');
+        if (!registerForm) registerForm = document.querySelector('form');
+        if (registerForm) {
+            registerForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                var form = this;
+                var submitted = false;
+                function doSubmit() { if (!submitted) { submitted = true; form.submit(); } }
+                setTimeout(doSubmit, 8000);
+                if (typeof grecaptcha !== 'undefined' && grecaptcha.ready) {
+                    grecaptcha.ready(function() {
+                        grecaptcha.execute('@ViewData["RecaptchaSiteKey"]', {action: 'register'}).then(function(token) {
+                            var el = document.getElementById('recaptchaToken');
+                            if (el) el.value = token;
+                            doSubmit();
+                        }).catch(doSubmit);
+                    });
+                } else { doSubmit(); }
+            });
+        }
+        function checkPasswordStrength() {
+            var password = document.getElementById("password").value;
+            var strengthDiv = document.getElementById("passwordStrength");
+            var strength = 0;
+            var feedback = [];
+            if (password.length >= 12) strength += 1; else feedback.push("12+ characters");
+            if (/[a-z]/.test(password)) strength += 1; else feedback.push("lowercase");
+            if (/[A-Z]/.test(password)) strength += 1; else feedback.push("uppercase");
+            if (/[0-9]/.test(password)) strength += 1; else feedback.push("number");
+            if (/[^a-zA-Z0-9]/.test(password)) strength += 1; else feedback.push("special char");
+            if (password.length === 0) { strengthDiv.innerHTML = ""; strengthDiv.className = ""; return; }
+            var strengthText = "", strengthClass = "rounded px-2 py-1 ";
+            if (strength === 5) {
+                strengthText = "<span class='text-success'>✓ Strong</span>";
+                strengthClass += "alert-gothic-info";
+            } else if (strength >= 3) {
+                strengthText = "<span class='text-warning'>⚠ Moderate</span>";
+                strengthClass += "alert-gothic-warning";
+            } else {
+                strengthText = "<span class='text-danger'>✗ Weak</span>";
+                strengthClass += "alert-gothic-danger";
+            }
+            if (feedback.length > 0) strengthText += " <span class='text-muted'>Missing: " + feedback.join(", ") + "</span>";
+            strengthDiv.className = strengthClass;
+            strengthDiv.innerHTML = strengthText;
+        }
+        function checkPasswordMatch() {
+            var password = document.getElementById("password").value;
+            var confirmPassword = document.getElementById("confirmPassword").value;
+            var matchDiv = document.getElementById("passwordMatch");
+            if (confirmPassword.length === 0) { matchDiv.innerHTML = ""; return; }
+            matchDiv.innerHTML = password === confirmPassword ? "<span class='text-success'>✓ Passwords match</span>" : "<span class='text-danger'>✗ Passwords do not match</span>";
+        }
+    </script>
+}

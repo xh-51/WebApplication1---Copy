@@ -1,0 +1,137 @@
+@{
+    ViewData["Title"] = "Ace Job Agency - Home";
+    var userInfo = ViewBag.UserInfo as dynamic;
+}
+
+@if (User.Identity?.IsAuthenticated == true && userInfo != null)
+{
+    @* Authenticated: profile card with gothic styling *@
+    @if (TempData["MultipleLoginWarning"] != null)
+    {
+        <div class="container mt-4">
+            <div class="alert alert-warning alert-dismissible fade show border border-warning" role="alert">
+                <i class="bi bi-exclamation-triangle"></i> @TempData["MultipleLoginWarning"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        </div>
+    }
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card border border-secondary rounded-3 overflow-hidden" style="background: var(--gothic-surface);">
+                    <div class="card-header border-secondary py-3" style="background: rgba(115, 115, 115, 0.2);">
+                        <h3 class="mb-0 font-display text-warning">Your Profile</h3>
+                    </div>
+                    <div class="card-body text-light">
+                        <div class="row mb-3">
+                            <div class="col-md-6"><strong class="text-muted">First Name</strong><p class="mb-0">@(userInfo?.FirstName ?? "")</p></div>
+                            <div class="col-md-6"><strong class="text-muted">Last Name</strong><p class="mb-0">@(userInfo?.LastName ?? "")</p></div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6"><strong class="text-muted">Email</strong><p class="mb-0">@(userInfo?.Email ?? "")</p></div>
+                            <div class="col-md-6"><strong class="text-muted">Gender</strong><p class="mb-0">@(userInfo?.Gender ?? "")</p></div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6"><strong class="text-muted">NRIC</strong><p class="mb-0">@(userInfo?.NRIC ?? "") <small class="text-muted">(decrypted)</small></p></div>
+                            <div class="col-md-6"><strong class="text-muted">Date of Birth</strong><p class="mb-0">@(userInfo?.DateOfBirth?.ToString() ?? "")</p></div>
+                        </div>
+                        @if (userInfo != null && !string.IsNullOrEmpty(userInfo?.ResumeFileName))
+                        {
+                            <div class="row mb-3">
+                                <div class="col-12">
+                                    <strong class="text-muted">Resume</strong>
+                                    <p class="mb-0">
+                                        @(userInfo?.ResumeFileName ?? "")
+                                        @if (userInfo != null && !string.IsNullOrEmpty(userInfo?.ResumeFilePath))
+                                        {
+                                            <a href="/@(userInfo?.ResumeFilePath ?? "")" target="_blank" class="btn btn-gothic-primary btn-sm ms-2">Download</a>
+                                        }
+                                    </p>
+                                </div>
+                            </div>
+                        }
+                        @if (userInfo != null && !string.IsNullOrEmpty(userInfo?.WhoAmI))
+                        {
+                            <div class="row mb-3">
+                                <div class="col-12">
+                                    <strong class="text-muted">Who Am I</strong>
+                                    <p class="border border-secondary p-3 rounded mt-1 mb-0">@Html.Raw(System.Net.WebUtility.HtmlEncode(userInfo?.WhoAmI ?? ""))</p>
+                                </div>
+                            </div>
+                        }
+                        <div class="mt-4 d-flex flex-wrap gap-2">
+                            <a asp-controller="Account" asp-action="ChangePassword" class="btn btn-gothic-outline"><i class="bi bi-key"></i> Change Password</a>
+                            <a asp-controller="Account" asp-action="Enable2FA" class="btn btn-gothic-outline"><i class="bi bi-shield-check"></i> Enable 2FA</a>
+                            <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-gothic-primary">Logout</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    @* Landing: hero + partners (reference layout, gothic theme) *@
+    <section class="hero-gothic py-5" style="min-height: 75vh;">
+        <div class="container py-5">
+            <div class="row align-items-center g-5">
+                <div class="col-lg-8 col-xl-7">
+                    <div class="d-inline-flex align-items-center gap-2 rounded-pill px-3 py-1 mb-3 border border-secondary" style="background: var(--gothic-surface);">
+                        <span class="small text-warning font-display">New</span>
+                        <span class="small text-muted">Career paths &gt;</span>
+                    </div>
+                    <h1 class="font-display fw-bold text-light mb-4" style="font-size: clamp(1.75rem, 4vw, 2.75rem); line-height: 1.2;">
+                        Transform Your Career with Ace Job Agency
+                    </h1>
+                    <p class="text-muted mb-4" style="font-size: 1.1rem; max-width: 28rem;">
+                        Find the right role, build your profile, and connect with employers. Secure registration, encrypted data, and a trusted path to your next opportunity.
+                    </p>
+                    <div class="d-flex flex-wrap gap-3">
+                        <a href="/Account/Register" class="btn btn-gothic-primary btn-lg rounded-2 px-4">Register for Free</a>
+                        <a href="/Account/Login" class="btn btn-gothic-outline btn-lg rounded-2 px-4">Login</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="partners-gothic py-5 border-top border-secondary" style="background: var(--gothic-surface);">
+        <div class="container">
+            <div class="row align-items-center g-4">
+                <div class="col-md-4">
+                    <h3 class="font-display text-light mb-1">Companies we empower</h3>
+                    <p class="text-muted small mb-0">Trusted by employers and job seekers.</p>
+                </div>
+                <div class="col-md-8">
+                    <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-end gap-4 opacity-75">
+                        <span class="font-display text-muted" style="font-size: 1.25rem;">Logique</span>
+                        <span class="font-display text-muted" style="font-size: 1.25rem;">Iconic</span>
+                        <span class="font-display text-muted" style="font-size: 1.25rem;">Grapho</span>
+                        <span class="font-display text-muted" style="font-size: 1.25rem;">Grapherz</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+}
+
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <script>
+        var sessionTimeout = 20 * 60 * 1000;
+        var timeoutTimer = setTimeout(function() { alert('Your session will expire in 1 minute. Please save your work.'); }, sessionTimeout - 60000);
+        var expireTimer = setTimeout(function() { window.location.href = '/Account/Login?sessionExpired=true'; }, sessionTimeout);
+        document.addEventListener('mousemove', resetSessionTimer);
+        document.addEventListener('keypress', resetSessionTimer);
+        document.addEventListener('click', resetSessionTimer);
+        function resetSessionTimer() {
+            clearTimeout(timeoutTimer); clearTimeout(expireTimer);
+            timeoutTimer = setTimeout(function() { alert('Your session will expire in 1 minute. Please save your work.'); }, sessionTimeout - 60000);
+            expireTimer = setTimeout(function() { window.location.href = '/Account/Login?sessionExpired=true'; }, sessionTimeout);
+        }
+    </script>
+}

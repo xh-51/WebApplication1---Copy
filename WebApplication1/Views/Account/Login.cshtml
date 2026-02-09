@@ -1,0 +1,80 @@
+@{
+    ViewData["Title"] = "Login - Ace Job Agency";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card card-gothic overflow-hidden">
+                <div class="card-header-gothic text-center">
+                    <h2 class="mb-0 font-display">Login</h2>
+                    <p class="small mb-0 mt-1 text-muted">Ace Job Agency</p>
+                </div>
+                <div class="card-body p-4">
+                    @if (TempData["SessionExpired"] != null)
+                    {
+                        <div class="alert alert-gothic-warning alert-dismissible fade show mb-4" role="alert">
+                            @TempData["SessionExpired"]
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <form asp-action="Login" method="post" id="loginForm">
+                        <div asp-validation-summary="All" class="alert alert-gothic-danger mb-4"></div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label form-label-gothic">Email Address</label>
+                            <input type="email" name="email" id="email" class="form-control form-control-gothic" required placeholder="you@example.com" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label form-label-gothic">Password</label>
+                            <input type="password" name="password" id="password" class="form-control form-control-gothic" required />
+                        </div>
+
+                        <div class="mb-4 form-check">
+                            <input type="checkbox" name="rememberMe" id="rememberMe" class="form-check-input form-check-input-gothic" />
+                            <label class="form-check-label form-check-label-gothic" for="rememberMe">Remember me</label>
+                        </div>
+
+                        <input type="hidden" name="recaptchaToken" id="recaptchaToken" />
+                        <div id="recaptcha-badge"></div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-gothic-primary btn-lg rounded-2 py-2" id="loginButton">Login</button>
+                        </div>
+                    </form>
+
+                    <div class="mt-4 pt-3 border-top border-secondary text-center">
+                        <p class="mb-1 small text-muted">Don't have an account? <a asp-action="Register" class="link-gothic text-decoration-none">Register here</a></p>
+                        <p class="mb-0 small text-muted"><a asp-action="ForgotPassword" class="link-gothic text-decoration-none">Forgot your password?</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://www.google.com/recaptcha/api.js?render=@ViewData["RecaptchaSiteKey"]"></script>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var form = this;
+            if (typeof grecaptcha !== 'undefined' && grecaptcha.ready) {
+                grecaptcha.ready(function() {
+                    grecaptcha.execute('@ViewData["RecaptchaSiteKey"]', {action: 'login'}).then(function(token) {
+                        document.getElementById('recaptchaToken').value = token;
+                        form.submit();
+                    }).catch(function(error) {
+                        console.error('reCAPTCHA error:', error);
+                        form.submit();
+                    });
+                });
+            } else {
+                console.warn('reCAPTCHA not loaded, submitting form anyway');
+                form.submit();
+            }
+        });
+    </script>
+}

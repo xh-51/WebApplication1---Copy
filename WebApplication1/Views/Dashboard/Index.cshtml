@@ -1,0 +1,126 @@
+@{
+    ViewData["Title"] = "Dashboard - Ace Job Agency";
+    var userInfo = ViewBag.UserInfo as dynamic;
+}
+
+<div class="container py-4 mb-5" style="padding-bottom: 5rem;">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+        <div>
+            <h1 class="font-display text-light mb-1">Dashboard</h1>
+            <p class="text-muted small mb-0">Manage your profile and account settings.</p>
+        </div>
+    </div>
+
+    @if (TempData["MultipleLoginWarning"] != null)
+    {
+        <div class="alert alert-gothic-warning alert-dismissible fade show mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i> @TempData["MultipleLoginWarning"]
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <ul class="nav nav-tabs nav-tabs-gothic mb-4" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#general">General</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#security">Security</a>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="general">
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="dashboard-card p-4 h-100">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h3 class="font-display text-warning mb-0 small">Profile Details</h3>
+                        </div>
+                        <div class="text-muted small mb-1">Full name</div>
+                        <p class="text-light mb-3">@(userInfo?.FirstName ?? "") @(userInfo?.LastName ?? "")</p>
+                        <div class="text-muted small mb-1">Email</div>
+                        <p class="text-light mb-3">@(userInfo?.Email ?? "")</p>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="text-muted small mb-1">Gender</div>
+                                <p class="text-light mb-0">@(userInfo?.Gender ?? "—")</p>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-muted small mb-1">Date of birth</div>
+                                <p class="text-light mb-0">@(userInfo?.DateOfBirth?.ToString() ?? "—")</p>
+                            </div>
+                        </div>
+                        <hr class="border-secondary my-3" />
+                        <div class="text-muted small mb-1">NRIC <span class="opacity-75">(decrypted for display)</span></div>
+                        <p class="text-light mb-0">@(userInfo?.NRIC ?? "—")</p>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="dashboard-card p-4 h-100">
+                        <h3 class="font-display text-warning mb-3 small">Resume</h3>
+                        @if (userInfo != null && !string.IsNullOrEmpty(userInfo?.ResumeFileName))
+                        {
+                            <p class="text-light mb-2">@(userInfo?.ResumeFileName ?? "")</p>
+                            @if (!string.IsNullOrEmpty(userInfo?.ResumeFilePath))
+                            {
+                                <a href="/@(userInfo?.ResumeFilePath)" target="_blank" class="btn btn-gothic-primary btn-sm">Download</a>
+                            }
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-0">No resume uploaded.</p>
+                        }
+                    </div>
+                    @if (userInfo != null && !string.IsNullOrEmpty(userInfo?.WhoAmI))
+                    {
+                        <div class="dashboard-card p-4 mt-4 mb-5">
+                            <h3 class="font-display text-warning mb-3 small">About you</h3>
+                            <p class="text-light mb-0 border border-secondary rounded p-3 small">@Html.Raw(System.Net.WebUtility.HtmlEncode(userInfo?.WhoAmI ?? ""))</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="security">
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="dashboard-card p-4">
+                        <h3 class="font-display text-warning mb-3 small">Security</h3>
+                        <p class="text-muted small mb-3">Change your password or enable two-factor authentication.</p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a asp-controller="Account" asp-action="ChangePassword" class="btn btn-gothic-outline"><i class="bi bi-key me-1"></i> Change Password</a>
+                            <a asp-controller="Account" asp-action="Enable2FA" class="btn btn-gothic-outline"><i class="bi bi-shield-check me-1"></i> Enable 2FA</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="dashboard-card p-4">
+                        <h3 class="font-display text-warning mb-3 small">Session</h3>
+                        <p class="text-muted small mb-3">Sign out from this device.</p>
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-gothic-primary">Logout</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <script>
+        var sessionTimeout = 20 * 60 * 1000;
+        var timeoutTimer = setTimeout(function() { alert('Your session will expire in 1 minute. Please save your work.'); }, sessionTimeout - 60000);
+        var expireTimer = setTimeout(function() { window.location.href = '/Account/Login?sessionExpired=true'; }, sessionTimeout);
+        document.addEventListener('mousemove', resetSessionTimer);
+        document.addEventListener('keypress', resetSessionTimer);
+        document.addEventListener('click', resetSessionTimer);
+        function resetSessionTimer() {
+            clearTimeout(timeoutTimer); clearTimeout(expireTimer);
+            timeoutTimer = setTimeout(function() { alert('Your session will expire in 1 minute. Please save your work.'); }, sessionTimeout - 60000);
+            expireTimer = setTimeout(function() { window.location.href = '/Account/Login?sessionExpired=true'; }, sessionTimeout);
+        }
+    </script>
+}

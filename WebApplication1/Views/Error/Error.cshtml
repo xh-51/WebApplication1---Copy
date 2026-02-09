@@ -1,0 +1,83 @@
+@{
+    ViewData["Title"] = "Error";
+    var statusCode = ViewBag.StatusCode ?? 500;
+    var errorMessage = ViewBag.ErrorMessage ?? "An error occurred while processing your request.";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <!-- Error Icon -->
+                    <div class="mb-4">
+                        @if (statusCode == 404)
+                        {
+                            <i class="bi bi-exclamation-triangle text-warning" style="font-size: 5rem;"></i>
+                        }
+                        else if (statusCode == 403)
+                        {
+                            <i class="bi bi-shield-exclamation text-danger" style="font-size: 5rem;"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-x-circle text-danger" style="font-size: 5rem;"></i>
+                        }
+                    </div>
+
+                    <!-- Error Code -->
+                    <h1 class="display-1 fw-bold text-primary">@statusCode</h1>
+
+                    <!-- Error Message -->
+                    <h2 class="mb-4">@errorMessage</h2>
+
+                    <!-- Additional Help -->
+                    <div class="alert alert-info mt-4">
+                        <h5><i class="bi bi-info-circle"></i> What can you do?</h5>
+                        <ul class="text-start mt-3">
+                            @if (statusCode == 404)
+                            {
+                                <li>Check the URL for typos</li>
+                                <li>Go back to the <a asp-controller="Home" asp-action="Index">homepage</a></li>
+                                <li>Use the navigation menu to find what you're looking for</li>
+                            }
+                            else if (statusCode == 403)
+                            {
+                                <li>Make sure you're logged in</li>
+                                <li>Contact the administrator if you believe this is an error</li>
+                                <li>Go back to the <a asp-controller="Home" asp-action="Index">homepage</a></li>
+                            }
+                            else
+                            {
+                                <li>Try refreshing the page</li>
+                                <li>Go back to the <a asp-controller="Home" asp-action="Index">homepage</a></li>
+                                <li>If the problem persists, contact support</li>
+                            }
+                        </ul>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="mt-4">
+                        <a asp-controller="Home" asp-action="Index" class="btn btn-primary btn-lg me-2">
+                            <i class="bi bi-house"></i> Go to Homepage
+                        </a>
+                        <button onclick="history.back()" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-arrow-left"></i> Go Back
+                        </button>
+                    </div>
+
+                    <!-- Error Details (only in development) -->
+                    @if (ViewBag.ErrorDetails != null)
+                    {
+                        <div class="mt-4">
+                            <details class="text-start">
+                                <summary class="text-muted">Error Details (Development Only)</summary>
+                                <pre class="bg-light p-3 mt-2 rounded">@ViewBag.ErrorDetails</pre>
+                            </details>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
