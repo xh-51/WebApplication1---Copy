@@ -19,7 +19,10 @@
 
                     <form action="/Account/Register" method="post" enctype="multipart/form-data">
                         @Html.AntiForgeryToken()
-                        <div asp-validation-summary="All" class="alert alert-gothic-danger mb-4" role="alert"></div>
+                        @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+                        {
+                            <div asp-validation-summary="All" class="alert alert-gothic-danger mb-4" role="alert"></div>
+                        }
 
                         <div class="row">
                             <div class="col-md-6 mb-3">

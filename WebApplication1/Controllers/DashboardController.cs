@@ -33,6 +33,7 @@ namespace WebApplication1.Controllers
                 return RedirectToAction("Login", "Account");
 
             string decryptedNRIC = _encryptionService.Decrypt(user.NRIC);
+            var is2FAEnabled = await _userManager.GetTwoFactorEnabledAsync(user);
             var userInfo = new
             {
                 FirstName = user.FirstName,
@@ -46,6 +47,7 @@ namespace WebApplication1.Controllers
                 WhoAmI = user.WhoAmI
             };
             ViewBag.UserInfo = userInfo;
+            ViewBag.TwoFactorEnabled = is2FAEnabled;
             return View();
         }
     }

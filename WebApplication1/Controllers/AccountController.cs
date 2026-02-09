@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using WebApplication1.Models;
@@ -20,6 +21,7 @@ namespace WebApplication1.Controllers
         private readonly IConfiguration _configuration;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IAntiforgery _antiforgery;
+        private readonly IEmailSender _emailSender;
 
         public AccountController(
             UserManager<ApplicationUser> userManager,
@@ -31,7 +33,8 @@ namespace WebApplication1.Controllers
             IWebHostEnvironment environment,
             IConfiguration configuration,
             IHttpClientFactory httpClientFactory,
-            IAntiforgery antiforgery)
+            IAntiforgery antiforgery,
+            IEmailSender emailSender)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -43,6 +46,7 @@ namespace WebApplication1.Controllers
             _configuration = configuration;
             _httpClientFactory = httpClientFactory;
             _antiforgery = antiforgery;
+            _emailSender = emailSender;
         }
 
         [HttpGet]
@@ -258,17 +262,69 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet]
-        public IActionResult Login(string sessionExpired)
+        public async Task<IActionResult> Login()
         {
             // Pass reCaptcha site key to view
             ViewData["RecaptchaSiteKey"] = _configuration["GoogleReCaptcha:SiteKey"] ?? "";
-            
-            if (sessionExpired == "true")
+            var sessionExpired = Request.Query["sessionExpired"].FirstOrDefault() == "true";
+            var sessionInvalidated = Request.Query["sessionInvalidated"].FirstOrDefault() == "1";
+            var forcedLogout = sessionExpired || sessionInvalidated;
+
+            // Prevent query params from appearing as validation errors in the summary
+            ModelState.Remove("sessionExpired");
+            ModelState.Remove("sessionInvalidated");
+
+            if (forcedLogout)
+            {
+                // Always sign out and clear session when we know this is a timeout/forced logout
+                if (User.Identity?.IsAuthenticated == true)
+                    await _signInManager.SignOutAsync();
+                HttpContext.Session.Clear();
+                ClearSessionCookie(HttpContext);
+                ClearAuthCookie(HttpContext);
+            }
+
+            if (sessionExpired)
             {
                 TempData["SessionExpired"] = "Your session has expired. Please login again.";
             }
+
+            if (sessionInvalidated)
+            {
+                TempData["SessionInvalidated"] = "You have been signed out because you logged in from another device or browser.";
+            }
             
             return View();
+        }
+
+        /// <summary>
+        /// Removes the ASP.NET Core session cookie so the session is fully abandoned (e.g. after forced logout).
+        /// </summary>
+        private static void ClearSessionCookie(HttpContext context)
+        {
+            const string sessionCookieName = ".AspNetCore.Session";
+            context.Response.Cookies.Delete(sessionCookieName, new CookieOptions
+            {
+                Path = "/",
+                HttpOnly = true,
+                SameSite = SameSiteMode.Strict,
+                Secure = context.Request.IsHttps
+            });
+        }
+
+        /// <summary>
+        /// Ensures the Identity auth cookie is removed (e.g. after forced logout or timeout redirect).
+        /// </summary>
+        private static void ClearAuthCookie(HttpContext context)
+        {
+            const string cookieName = ".AspNetCore.Identity.Application";
+            context.Response.Cookies.Delete(cookieName, new CookieOptions
+            {
+                Path = "/",
+                HttpOnly = true,
+                SameSite = SameSiteMode.Strict,
+                Secure = context.Request.IsHttps
+            });
         }
 
         [HttpPost]
@@ -292,7 +348,7 @@ namespace WebApplication1.Controllers
             var user = await _userManager.FindByEmailAsync(email);
             if (user == null)
             {
-                ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                ModelState.AddModelError(string.Empty, "Your email or password is wrong. Please try again later.");
                 await _auditLogService.LogActivityAsync("", email, "Login Failed", "User not found");
                 return View();
             }
@@ -312,16 +368,17 @@ namespace WebApplication1.Controllers
                     return RedirectToAction("Verify2FA", new { rememberMe = rememberMe });
                 }
 
-                // Store session ID for multiple login detection
+                // Store session ID (used to enforce single session: only latest login is valid)
                 HttpContext.Session.SetString("SessionId", HttpContext.Session.Id);
                 HttpContext.Session.SetString("UserId", user.Id);
 
-                // Check for multiple logins from different devices/browser tabs
-                var hasMultipleLogins = await _auditLogService.HasActiveSessionAsync(user.Id, HttpContext.Session.Id);
-                if (hasMultipleLogins)
-                {
-                    TempData["MultipleLoginWarning"] = "Warning: You have active sessions from other devices or browser tabs.";
-                }
+                // Audit log first so single-session middleware allows this session (even when redirecting to ChangePassword)
+                await _auditLogService.LogActivityAsync(
+                    user.Id,
+                    user.Email ?? "",
+                    "Login",
+                    "User successfully logged in"
+                );
 
                 // Check password expiry
                 var (mustChange, message) = _passwordPolicyService.MustChangePassword(user);
@@ -330,14 +387,6 @@ namespace WebApplication1.Controllers
                     TempData["PasswordExpired"] = message;
                     return RedirectToAction("ChangePassword");
                 }
-
-                // Audit log: Successful Login
-                await _auditLogService.LogActivityAsync(
-                    user.Id,
-                    user.Email ?? "",
-                    "Login",
-                    "User successfully logged in"
-                );
 
                 return RedirectToAction("Index", "Dashboard");
             }
@@ -350,12 +399,12 @@ namespace WebApplication1.Controllers
 
             if (result.IsLockedOut)
             {
-                ModelState.AddModelError(string.Empty, "Account locked out due to 3 failed login attempts. Please try again in 5 minutes.");
+                ModelState.AddModelError(string.Empty, "Account locked out due to 3 failed login attempts. Please try again in 1 minute.");
                 await _auditLogService.LogActivityAsync(user.Id, user.Email ?? "", "Account Locked", "Account locked after 3 failed attempts");
             }
             else
             {
-                ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                ModelState.AddModelError(string.Empty, "Your email or password is wrong. Please try again later.");
                 await _auditLogService.LogActivityAsync(user.Id, user.Email ?? "", "Login Failed", "Invalid credentials");
             }
 
@@ -413,9 +462,11 @@ namespace WebApplication1.Controllers
                 );
             }
 
-            // Clear session
+            // Clear session, session cookie, and auth cookie
             HttpContext.Session.Clear();
+            ClearSessionCookie(HttpContext);
             await _signInManager.SignOutAsync();
+            ClearAuthCookie(HttpContext);
 
             return RedirectToAction("Login", "Account");
         }
@@ -441,18 +492,42 @@ namespace WebApplication1.Controllers
                 return RedirectToAction("Login");
             }
 
-            // Check if password must be changed (maximum age)
+            // Check if password must be changed (expired - max age)
             var (mustChange, message) = _passwordPolicyService.MustChangePassword(user);
             if (mustChange)
             {
                 TempData["PasswordExpired"] = message;
+                SetPasswordPolicyViewBag();
+                return View();
             }
-            else if (!string.IsNullOrEmpty(message))
+
+            // If not expired, enforce minimum age: don't allow into change password page until 1 minute since last change
+            var (canChange, minAgeError) = _passwordPolicyService.CanChangePassword(user);
+            if (!canChange)
+            {
+                TempData["PasswordChangeNotAllowed"] = minAgeError;
+                return RedirectToAction("Index", "Dashboard");
+            }
+
+            if (!string.IsNullOrEmpty(message))
             {
                 TempData["PasswordWarning"] = message;
             }
 
+            SetPasswordPolicyViewBag();
             return View();
+        }
+
+        private void SetPasswordPolicyViewBag()
+        {
+            var min = _passwordPolicyService.MinAgeMinutes;
+            var max = _passwordPolicyService.MaxAgeMinutes;
+            var history = _passwordPolicyService.MaxHistoryCount;
+            ViewBag.MinAgeMinutes = min;
+            ViewBag.MaxAgeMinutes = max;
+            ViewBag.MaxHistory = history;
+            ViewBag.MinAgeText = min == 1 ? "1 minute" : $"{min} minutes";
+            ViewBag.MaxAgeText = max < 60 ? $"{max} minutes" : max < 24 * 60 ? $"{max / 60} hours" : $"{max / (24 * 60)} days";
         }
 
         [HttpPost]
@@ -462,6 +537,7 @@ namespace WebApplication1.Controllers
         {
             if (!ModelState.IsValid)
             {
+                SetPasswordPolicyViewBag();
                 return View(model);
             }
 
@@ -476,6 +552,7 @@ namespace WebApplication1.Controllers
             if (!canChange)
             {
                 ModelState.AddModelError(string.Empty, errorMessage);
+                SetPasswordPolicyViewBag();
                 return View(model);
             }
 
@@ -484,6 +561,7 @@ namespace WebApplication1.Controllers
             if (!canUse)
             {
                 ModelState.AddModelError("NewPassword", historyError);
+                SetPasswordPolicyViewBag();
                 return View(model);
             }
 
@@ -492,14 +570,18 @@ namespace WebApplication1.Controllers
             if (!verifyResult)
             {
                 ModelState.AddModelError("CurrentPassword", "Current password is incorrect.");
+                SetPasswordPolicyViewBag();
                 return View(model);
             }
+
+            // Save current password hash to history before changing (for "cannot reuse last 2" check)
+            await _passwordPolicyService.AddCurrentPasswordToHistory(user);
 
             // Change password
             var result = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
             if (result.Succeeded)
             {
-                // Update password change date and history
+                // Update password change date
                 await _passwordPolicyService.UpdatePasswordChangeDate(user);
 
                 // Audit log
@@ -519,6 +601,7 @@ namespace WebApplication1.Controllers
                 ModelState.AddModelError(string.Empty, error.Description);
             }
 
+            SetPasswordPolicyViewBag();
             return View(model);
         }
 
@@ -533,36 +616,36 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
         {
             if (!ModelState.IsValid)
-            {
                 return View(model);
-            }
 
             var user = await _userManager.FindByEmailAsync(model.Email);
-            if (user == null || !(await _userManager.IsEmailConfirmedAsync(user)))
+
+            // Same confirmation for existing and non-existing (no user enumeration)
+            if (user != null && await _userManager.IsEmailConfirmedAsync(user))
             {
-                // Don't reveal that the user does not exist or is not confirmed
-                TempData["SuccessMessage"] = "If an account with that email exists, a password reset link has been sent.";
-                return RedirectToAction("Login");
+                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                var callbackUrl = Url.Action(nameof(ResetPassword), "Account", new { token, email = user.Email }, protocol: Request.Scheme);
+
+                try
+                {
+                    await _emailSender.SendEmailAsync(
+                        user.Email!,
+                        "Reset your Ace Job Agency password",
+                        $"Please reset your password by clicking <a href=\"{callbackUrl}\">this secure link</a>. The link will expire after a short time.");
+                }
+                catch (Exception)
+                {
+                    // Logged in EmailSender; still show confirmation (no user enumeration)
+                }
+
+                await _auditLogService.LogActivityAsync(
+                    user.Id,
+                    user.Email ?? "",
+                    "Password Reset Requested",
+                    "User requested password reset");
             }
 
-            // Generate password reset token
-            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-            var callbackUrl = Url.Action("ResetPassword", "Account", new { email = model.Email, token = token }, protocol: Request.Scheme);
-
-            // In production, send email here
-            // For demo, we'll show the link
-            TempData["ResetLink"] = callbackUrl;
-            TempData["SuccessMessage"] = $"Password reset link generated. In production, this would be sent via email. Link: {callbackUrl}";
-
-            // Audit log
-            await _auditLogService.LogActivityAsync(
-                user.Id,
-                user.Email ?? "",
-                "Password Reset Requested",
-                "User requested password reset"
-            );
-
-            return RedirectToAction("ForgotPasswordConfirmation");
+            return View("ForgotPasswordConfirmation");
         }
 
         [HttpGet]
@@ -575,16 +658,9 @@ namespace WebApplication1.Controllers
         public IActionResult ResetPassword(string? email, string? token)
         {
             if (email == null || token == null)
-            {
-                return RedirectToAction("Error", "Error", new { statusCode = 400 });
-            }
+                return RedirectToAction("Login");
 
-            var model = new ResetPasswordViewModel
-            {
-                Email = email,
-                Token = token
-            };
-
+            var model = new ResetPasswordViewModel { Email = email, Token = token };
             return View(model);
         }
 
@@ -593,43 +669,46 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
         {
             if (!ModelState.IsValid)
-            {
                 return View(model);
-            }
 
             var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null)
             {
-                // Don't reveal that the user does not exist
-                TempData["SuccessMessage"] = "Password has been reset.";
-                return RedirectToAction("Login");
+                return RedirectToAction("ResetPasswordConfirmation");
             }
 
-            // Reset password
+            // Password history: cannot reuse last N passwords
+            var (canUse, historyError) = await _passwordPolicyService.CanUsePassword(user, model.Password);
+            if (!canUse)
+            {
+                ModelState.AddModelError("Password", historyError);
+                return View(model);
+            }
+
             var result = await _userManager.ResetPasswordAsync(user, model.Token, model.Password);
             if (result.Succeeded)
             {
-                // Update password change date
                 await _passwordPolicyService.UpdatePasswordChangeDate(user);
 
-                // Audit log
                 await _auditLogService.LogActivityAsync(
                     user.Id,
                     user.Email ?? "",
                     "Password Reset",
-                    "User successfully reset password"
-                );
+                    "User successfully reset password");
 
-                TempData["SuccessMessage"] = "Your password has been reset. Please login with your new password.";
-                return RedirectToAction("Login");
+                return RedirectToAction("ResetPasswordConfirmation");
             }
 
             foreach (var error in result.Errors)
-            {
                 ModelState.AddModelError(string.Empty, error.Description);
-            }
 
             return View(model);
+        }
+
+        [HttpGet]
+        public IActionResult ResetPasswordConfirmation()
+        {
+            return View();
         }
 
         // ============================================
@@ -760,6 +839,14 @@ namespace WebApplication1.Controllers
                 HttpContext.Session.SetString("SessionId", HttpContext.Session.Id);
                 HttpContext.Session.SetString("UserId", user.Id);
 
+                // Audit log first so single-session middleware allows this session (even when redirecting to ChangePassword)
+                await _auditLogService.LogActivityAsync(
+                    user.Id,
+                    user.Email ?? "",
+                    "2FA Login",
+                    "User successfully logged in with 2FA"
+                );
+
                 // Check password expiry
                 var (mustChange, message) = _passwordPolicyService.MustChangePassword(user);
                 if (mustChange)
@@ -767,14 +854,6 @@ namespace WebApplication1.Controllers
                     TempData["PasswordExpired"] = message;
                     return RedirectToAction("ChangePassword");
                 }
-
-                // Audit log
-                await _auditLogService.LogActivityAsync(
-                    user.Id,
-                    user.Email ?? "",
-                    "2FA Login",
-                    "User successfully logged in with 2FA"
-                );
 
                 return RedirectToAction("Index", "Dashboard");
             }

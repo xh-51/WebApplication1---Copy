@@ -12,6 +12,7 @@ namespace WebApplication1.Data
         }
 
         public DbSet<AuditLog> AuditLogs { get; set; }
+        public DbSet<UserPasswordHistory> UserPasswordHistories { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -30,6 +31,12 @@ namespace WebApplication1.Data
                 entity.HasIndex(e => e.UserId);
                 entity.HasIndex(e => e.Timestamp);
                 entity.HasIndex(e => e.SessionId);
+            });
+
+            // Password history for "cannot reuse last 2 passwords"
+            builder.Entity<UserPasswordHistory>(entity =>
+            {
+                entity.HasIndex(e => e.UserId);
             });
         }
     }

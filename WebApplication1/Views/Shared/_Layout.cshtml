@@ -154,9 +154,105 @@
             border: 1px solid var(--gothic-border);
             border-radius: 0.5rem;
         }
+        /* Spider web & chain aesthetic */
+        .gothic-decor {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .gothic-decor svg {
+            position: absolute;
+            opacity: 0.12;
+        }
+        .gothic-decor .spider-web {
+            animation: spiderweb-pulse 8s ease-in-out infinite;
+        }
+        .gothic-decor .chain {
+            animation: chain-sway 6s ease-in-out infinite;
+            transform-origin: top center;
+        }
+        .gothic-decor .chain-right { animation-delay: -2s; }
+        .gothic-decor .chain-bottom { animation-delay: -1s; }
+        @@keyframes spiderweb-pulse {
+            0%, 100% { opacity: 0.08; }
+            50% { opacity: 0.2; }
+        }
+        @@keyframes chain-sway {
+            0%, 100% { transform: rotate(-0.5deg); }
+            50% { transform: rotate(0.5deg); }
+        }
+        body { position: relative; }
+        body > nav, body > main, body > footer { position: relative; z-index: 1; }
     </style>
 </head>
 <body>
+    <div class="gothic-decor" aria-hidden="true">
+        <!-- Corner spider webs (radial webs with spiral) -->
+        <svg class="spider-web" width="200" height="200" viewBox="0 0 100 100" style="top:0;left:0;transform-origin:0 0;">
+            <!-- radial lines from corner -->
+            <line x1="0" y1="0" x2="0" y2="100" stroke="var(--gothic-gold)" stroke-width="0.35" opacity="0.85"/>
+            <line x1="0" y1="0" x2="100" y2="0" stroke="var(--gothic-gold)" stroke-width="0.35" opacity="0.85"/>
+            <line x1="0" y1="0" x2="25" y2="75" stroke="var(--gothic-gold)" stroke-width="0.3" opacity="0.7"/>
+            <line x1="0" y1="0" x2="75" y2="25" stroke="var(--gothic-gold)" stroke-width="0.3" opacity="0.7"/>
+            <line x1="0" y1="0" x2="50" y2="50" stroke="var(--gothic-gold)" stroke-width="0.3" opacity="0.7"/>
+            <!-- spiral arcs -->
+            <path fill="none" stroke="var(--gothic-gold)" stroke-width="0.25" d="M0 0 Q50 0 50 50 Q50 100 0 100" opacity="0.6"/>
+            <path fill="none" stroke="var(--gothic-gold)" stroke-width="0.2" d="M0 0 Q25 25 50 50" opacity="0.5"/>
+        </svg>
+        <svg class="spider-web" width="200" height="200" viewBox="0 0 100 100" style="top:0;right:0;transform-origin:100% 0;transform: scaleX(-1);">
+            <line x1="0" y1="0" x2="0" y2="100" stroke="var(--gothic-gold)" stroke-width="0.35" opacity="0.85"/>
+            <line x1="0" y1="0" x2="100" y2="0" stroke="var(--gothic-gold)" stroke-width="0.35" opacity="0.85"/>
+            <line x1="0" y1="0" x2="25" y2="75" stroke="var(--gothic-gold)" stroke-width="0.3" opacity="0.7"/>
+            <line x1="0" y1="0" x2="75" y2="25" stroke="var(--gothic-gold)" stroke-width="0.3" opacity="0.7"/>
+            <line x1="0" y1="0" x2="50" y2="50" stroke="var(--gothic-gold)" stroke-width="0.3" opacity="0.7"/>
+            <path fill="none" stroke="var(--gothic-gold)" stroke-width="0.25" d="M0 0 Q50 0 50 50 Q50 100 0 100" opacity="0.6"/>
+            <path fill="none" stroke="var(--gothic-gold)" stroke-width="0.2" d="M0 0 Q25 25 50 50" opacity="0.5"/>
+        </svg>
+        <svg class="spider-web" width="200" height="200" viewBox="0 0 100 100" style="bottom:0;left:0;transform-origin:0 100%;transform: scaleY(-1);">
+            <line x1="0" y1="0" x2="0" y2="100" stroke="var(--gothic-gold)" stroke-width="0.35" opacity="0.85"/>
+            <line x1="0" y1="0" x2="100" y2="0" stroke="var(--gothic-gold)" stroke-width="0.35" opacity="0.85"/>
+            <line x1="0" y1="0" x2="25" y2="75" stroke="var(--gothic-gold)" stroke-width="0.3" opacity="0.7"/>
+            <line x1="0" y1="0" x2="75" y2="25" stroke="var(--gothic-gold)" stroke-width="0.3" opacity="0.7"/>
+            <line x1="0" y1="0" x2="50" y2="50" stroke="var(--gothic-gold)" stroke-width="0.3" opacity="0.7"/>
+            <path fill="none" stroke="var(--gothic-gold)" stroke-width="0.25" d="M0 0 Q50 0 50 50 Q50 100 0 100" opacity="0.6"/>
+            <path fill="none" stroke="var(--gothic-gold)" stroke-width="0.2" d="M0 0 Q25 25 50 50" opacity="0.5"/>
+        </svg>
+        <svg class="spider-web" width="200" height="200" viewBox="0 0 100 100" style="bottom:0;right:0;transform-origin:100% 100%;transform: scale(-1);">
+            <line x1="0" y1="0" x2="0" y2="100" stroke="var(--gothic-gold)" stroke-width="0.35" opacity="0.85"/>
+            <line x1="0" y1="0" x2="100" y2="0" stroke="var(--gothic-gold)" stroke-width="0.35" opacity="0.85"/>
+            <line x1="0" y1="0" x2="25" y2="75" stroke="var(--gothic-gold)" stroke-width="0.3" opacity="0.7"/>
+            <line x1="0" y1="0" x2="75" y2="25" stroke="var(--gothic-gold)" stroke-width="0.3" opacity="0.7"/>
+            <line x1="0" y1="0" x2="50" y2="50" stroke="var(--gothic-gold)" stroke-width="0.3" opacity="0.7"/>
+            <path fill="none" stroke="var(--gothic-gold)" stroke-width="0.25" d="M0 0 Q50 0 50 50 Q50 100 0 100" opacity="0.6"/>
+            <path fill="none" stroke="var(--gothic-gold)" stroke-width="0.2" d="M0 0 Q25 25 50 50" opacity="0.5"/>
+        </svg>
+        <!-- Left chain -->
+        <svg class="chain chain-left" width="48" height="100%" viewBox="0 0 24 1200" preserveAspectRatio="none" style="left:0;top:0;height:100%;">
+            <defs>
+                <pattern id="chainLinkL" patternUnits="userSpaceOnUse" width="24" height="28">
+                    <ellipse cx="12" cy="8" rx="10" ry="6" fill="none" stroke="var(--gothic-gold)" stroke-width="1.2"/>
+                    <ellipse cx="12" cy="20" rx="10" ry="6" fill="none" stroke="var(--gothic-gold)" stroke-width="1.2"/>
+                    <path d="M2 8 L2 14 L2 20" fill="none" stroke="var(--gothic-gold)" stroke-width="1.2"/>
+                    <path d="M22 8 L22 14 L22 20" fill="none" stroke="var(--gothic-gold)" stroke-width="1.2"/>
+                </pattern>
+            </defs>
+            <rect width="24" height="1200" fill="url(#chainLinkL)"/>
+        </svg>
+        <!-- Right chain -->
+        <svg class="chain chain-right" width="48" height="100%" viewBox="0 0 24 1200" preserveAspectRatio="none" style="right:0;top:0;height:100%;">
+            <defs>
+                <pattern id="chainLinkR" patternUnits="userSpaceOnUse" width="24" height="28">
+                    <ellipse cx="12" cy="8" rx="10" ry="6" fill="none" stroke="var(--gothic-gold)" stroke-width="1.2"/>
+                    <ellipse cx="12" cy="20" rx="10" ry="6" fill="none" stroke="var(--gothic-gold)" stroke-width="1.2"/>
+                    <path d="M2 8 L2 14 L2 20" fill="none" stroke="var(--gothic-gold)" stroke-width="1.2"/>
+                    <path d="M22 8 L22 14 L22 20" fill="none" stroke="var(--gothic-gold)" stroke-width="1.2"/>
+                </pattern>
+            </defs>
+            <rect width="24" height="1200" fill="url(#chainLinkR)"/>
+        </svg>
+    </div>
     <nav class="navbar navbar-expand-lg navbar-dark navbar-gothic py-3">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center gap-2" href="@(User.Identity?.IsAuthenticated == true ? "/Dashboard" : "/")">

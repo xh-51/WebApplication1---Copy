@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using WebApplication1.Data;
+using WebApplication1.Middleware;
 using WebApplication1.Models;
 using WebApplication1.Services;
 
@@ -59,6 +60,9 @@ builder.Services.AddScoped<AuditLogService>();
 // Register password policy service
 builder.Services.AddScoped<PasswordPolicyService>();
 
+// Email (SMTP) for forgot password. If Smtp:Host is empty, emails are logged and not sent.
+builder.Services.AddScoped<IEmailSender, EmailSender>();
+
 // Add Entity Framework and Identity (retry on transient failures to avoid connection reset)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
@@ -79,8 +83,8 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.User.RequireUniqueEmail = true;
     options.SignIn.RequireConfirmedEmail = false; // Set to true in production
 
-    // Lockout settings - 3 failed attempts, auto-recovery after 5 minutes
-    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5); // Auto-recovery after 5 minutes
+    // Lockout settings - 3 failed attempts, auto-recovery after 1 minute
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(1); // Auto-recovery after 1 minute
     options.Lockout.MaxFailedAccessAttempts = 3; // Changed to 3 attempts
     options.Lockout.AllowedForNewUsers = true;
 
@@ -97,7 +101,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.LoginPath = "/Account/Login";
     options.LogoutPath = "/Account/Logout";
     options.AccessDeniedPath = "/Account/AccessDenied";
-    options.ExpireTimeSpan = TimeSpan.FromMinutes(20); // Session timeout: 20 minutes
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(1); // Session timeout: 1 minute (inactivity)
     options.SlidingExpiration = true;
     options.Cookie.HttpOnly = true;
     options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
@@ -107,7 +111,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 // Add session support for tracking multiple logins
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromMinutes(20);
+    options.IdleTimeout = TimeSpan.FromMinutes(1);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
@@ -119,7 +123,23 @@ if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    try { db.Database.Migrate(); } catch { /* e.g. LocalDB not running */ }
+    try
+    {
+        db.Database.Migrate();
+        // Ensure UserPasswordHistories exists (in case migration was not applied, e.g. "No migrations were applied")
+        db.Database.ExecuteSqlRaw(@"
+            IF OBJECT_ID(N'dbo.UserPasswordHistories', N'U') IS NULL
+            BEGIN
+                CREATE TABLE [dbo].[UserPasswordHistories] (
+                    [Id] int NOT NULL IDENTITY(1,1) PRIMARY KEY,
+                    [UserId] nvarchar(450) NOT NULL,
+                    [PasswordHash] nvarchar(max) NOT NULL,
+                    [CreatedAtUtc] datetime2 NOT NULL
+                );
+                CREATE INDEX [IX_UserPasswordHistories_UserId] ON [dbo].[UserPasswordHistories]([UserId]);
+            END");
+    }
+    catch { /* e.g. LocalDB not running */ }
 }
 
 // Catch any unhandled exception and return 500 HTML so connection is never reset
@@ -173,6 +193,9 @@ app.UseRouting();
 // Authentication and Authorization must be in this order
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Enforce single session per account: new login signs out previous session
+app.UseMiddleware<SingleSessionMiddleware>();
 
 app.MapControllerRoute(
     name: "default",

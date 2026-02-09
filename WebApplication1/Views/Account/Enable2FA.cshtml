@@ -41,7 +41,10 @@
                         <div class="col-md-6">
                             <h5>Step 3: Verify Code</h5>
                             <form asp-action="Enable2FA" method="post">
-                                <div asp-validation-summary="All" class="text-danger"></div>
+                                @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+                                {
+                                    <div asp-validation-summary="All" class="text-danger"></div>
+                                }
 
                                 <div class="mb-3">
                                     <label for="verificationCode" class="form-label">Enter 6-digit code from your authenticator app</label>

@@ -14,7 +14,10 @@
                     <p>Please enter the 6-digit code from your authenticator app.</p>
 
                     <form asp-action="Verify2FA" method="post">
-                        <div asp-validation-summary="All" class="text-danger"></div>
+                        @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+                        {
+                            <div asp-validation-summary="All" class="text-danger"></div>
+                        }
 
                         <div class="mb-3">
                             <label for="verificationCode" class="form-label">Verification Code</label>

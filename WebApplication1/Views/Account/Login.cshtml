@@ -18,9 +18,19 @@
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
                         </div>
                     }
+                    @if (TempData["SessionInvalidated"] != null)
+                    {
+                        <div class="alert alert-gothic-warning alert-dismissible fade show mb-4" role="alert">
+                            @TempData["SessionInvalidated"]
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
 
                     <form asp-action="Login" method="post" id="loginForm">
-                        <div asp-validation-summary="All" class="alert alert-gothic-danger mb-4"></div>
+                        @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+                        {
+                            <div asp-validation-summary="All" class="alert alert-gothic-danger mb-4"></div>
+                        }
 
                         <div class="mb-3">
                             <label for="email" class="form-label form-label-gothic">Email Address</label>

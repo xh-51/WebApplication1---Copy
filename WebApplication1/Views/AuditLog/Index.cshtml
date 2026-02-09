@@ -1,0 +1,47 @@
+@model List<WebApplication1.Models.AuditLog>
+@{
+    ViewData["Title"] = "Audit Logs - Ace Job Agency";
+}
+
+<div class="container py-4 mb-5">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+        <div>
+            <h1 class="font-display text-light mb-1">Audit Logs</h1>
+            <p class="text-muted small mb-0">Your recent account activity (logins, logouts, and more).</p>
+        </div>
+        <a asp-controller="Dashboard" asp-action="Index" class="btn btn-gothic-outline btn-sm">Back to Dashboard</a>
+    </div>
+
+    <div class="dashboard-card p-4">
+        @if (Model != null && Model.Count > 0)
+        {
+            <div class="table-responsive">
+                <table class="table table-dark table-hover table-borderless mb-0">
+                    <thead>
+                        <tr class="border-bottom border-secondary">
+                            <th class="text-warning small font-display">Time (UTC)</th>
+                            <th class="text-warning small font-display">Action</th>
+                            <th class="text-warning small font-display">Description</th>
+                            <th class="text-warning small font-display d-none d-md-table-cell">IP Address</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var log in Model)
+                        {
+                            <tr class="border-bottom border-secondary">
+                                <td class="text-light small">@log.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                <td class="text-light small">@log.Action</td>
+                                <td class="text-muted small">@(log.Description ?? "—")</td>
+                                <td class="text-muted small d-none d-md-table-cell">@log.IpAddress</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <p class="text-muted mb-0">No audit logs found.</p>
+        }
+    </div>
+</div>

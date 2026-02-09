@@ -6,15 +6,6 @@
 @if (User.Identity?.IsAuthenticated == true && userInfo != null)
 {
     @* Authenticated: profile card with gothic styling *@
-    @if (TempData["MultipleLoginWarning"] != null)
-    {
-        <div class="container mt-4">
-            <div class="alert alert-warning alert-dismissible fade show border border-warning" role="alert">
-                <i class="bi bi-exclamation-triangle"></i> @TempData["MultipleLoginWarning"]
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        </div>
-    }
     <div class="container py-5">
         <div class="row justify-content-center">
             <div class="col-lg-8">
@@ -122,15 +113,16 @@ else
 @if (User.Identity?.IsAuthenticated == true)
 {
     <script>
-        var sessionTimeout = 20 * 60 * 1000;
-        var timeoutTimer = setTimeout(function() { alert('Your session will expire in 1 minute. Please save your work.'); }, sessionTimeout - 60000);
+        var sessionTimeout = 1 * 60 * 1000; // 1 minute
+        var warningMs = 30 * 1000; // warn 30 seconds before expiry
+        var timeoutTimer = setTimeout(function() { alert('Your session will expire in 30 seconds. Please save your work.'); }, sessionTimeout - warningMs);
         var expireTimer = setTimeout(function() { window.location.href = '/Account/Login?sessionExpired=true'; }, sessionTimeout);
         document.addEventListener('mousemove', resetSessionTimer);
         document.addEventListener('keypress', resetSessionTimer);
         document.addEventListener('click', resetSessionTimer);
         function resetSessionTimer() {
             clearTimeout(timeoutTimer); clearTimeout(expireTimer);
-            timeoutTimer = setTimeout(function() { alert('Your session will expire in 1 minute. Please save your work.'); }, sessionTimeout - 60000);
+            timeoutTimer = setTimeout(function() { alert('Your session will expire in 30 seconds. Please save your work.'); }, sessionTimeout - warningMs);
             expireTimer = setTimeout(function() { window.location.href = '/Account/Login?sessionExpired=true'; }, sessionTimeout);
         }
     </script>

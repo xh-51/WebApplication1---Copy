@@ -56,11 +56,16 @@ namespace WebApplication1.Services
             return httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
         }
 
-        public async Task<List<AuditLog>> GetUserActivitiesAsync(string userId)
+        /// <summary>
+        /// Get audit logs for a user, most recent first. Optional maxCount (default 200) to limit rows.
+        /// </summary>
+        public async Task<List<AuditLog>> GetUserActivitiesAsync(string userId, int? maxCount = 200)
         {
+            var limit = (maxCount.HasValue && maxCount.Value > 0) ? maxCount.Value : 200;
             return await _context.AuditLogs
                 .Where(a => a.UserId == userId)
                 .OrderByDescending(a => a.Timestamp)
+                .Take(limit)
                 .ToListAsync();
         }
 
@@ -71,12 +76,34 @@ namespace WebApplication1.Services
                 .Where(a => a.UserId == userId 
                     && a.SessionId != currentSessionId 
                     && a.Action == "Login"
-                    && a.Timestamp > DateTime.UtcNow.AddMinutes(-20)) // Within session timeout
+                    && a.Timestamp > DateTime.UtcNow.AddMinutes(-1)) // Within session timeout
                 .Select(a => a.SessionId)
                 .Distinct()
                 .ToListAsync();
 
             return otherSessions.Any();
+        }
+
+        /// <summary>
+        /// Returns the SessionId of the most recent Login, 2FA Login, or Register for this user.
+        /// Used to enforce single session: only this session is valid; others are signed out.
+        /// </summary>
+        public async Task<string?> GetCurrentSessionIdAsync(string userId)
+        {
+            if (string.IsNullOrEmpty(userId)) return null;
+            try
+            {
+                var latest = await _context.AuditLogs
+                    .Where(a => a.UserId == userId && (a.Action == "Login" || a.Action == "Register" || a.Action == "2FA Login"))
+                    .OrderByDescending(a => a.Timestamp)
+                    .Select(a => a.SessionId)
+                    .FirstOrDefaultAsync();
+                return latest;
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
 }
