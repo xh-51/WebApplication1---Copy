@@ -55,7 +55,7 @@ public class SingleSessionMiddleware
             context.Session.Clear();
             ClearSessionCookie(context);
             ClearAuthCookie(context);
-            context.Response.Redirect("/Account/Login?sessionInvalidated=1");
+            context.Response.Redirect("/Account/SessionInvalidated");
             return;
         }
 

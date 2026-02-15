@@ -58,6 +58,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [RequestFormLimits(MultipartBodyLengthLimit = 50 * 1024 * 1024)] // 50 MB
         [RequestSizeLimit(50 * 1024 * 1024)] // 50 MB
         public async Task<IActionResult> Register(RegisterViewModel model, string recaptchaToken)
@@ -65,16 +66,6 @@ namespace WebApplication1.Controllers
             ViewData["RecaptchaSiteKey"] = _configuration["GoogleReCaptcha:SiteKey"] ?? "";
             if (model == null)
                 model = new RegisterViewModel();
-            // Validate anti-forgery token in action (avoids filter throwing and causing connection reset)
-            try
-            {
-                await _antiforgery.ValidateRequestAsync(HttpContext);
-            }
-            catch
-            {
-                ModelState.AddModelError(string.Empty, "Security validation failed. Please refresh the page and try again.");
-                return View(model);
-            }
             try
             {
                 return await RegisterCoreAsync(model, recaptchaToken);
@@ -282,17 +273,16 @@ namespace WebApplication1.Controllers
         {
             // Pass reCaptcha site key to view
             ViewData["RecaptchaSiteKey"] = _configuration["GoogleReCaptcha:SiteKey"] ?? "";
-            var sessionExpired = Request.Query["sessionExpired"].FirstOrDefault() == "true";
-            var sessionInvalidated = Request.Query["sessionInvalidated"].FirstOrDefault() == "1";
-            var forcedLogout = sessionExpired || sessionInvalidated;
 
-            // Prevent query params from appearing as validation errors in the summary
-            ModelState.Remove("sessionExpired");
-            ModelState.Remove("sessionInvalidated");
+            // Use server-set TempData only (set by Dashboard/Home/SessionInvalidated) — never query string —
+            // to decide whether to perform sign-out/clear. This prevents user-controlled bypass of sensitive logic.
+            var sessionExpiredMessage = TempData["SessionExpired"] as string;
+            var sessionInvalidatedMessage = TempData["SessionInvalidated"] as string;
+            bool forcedLogout = sessionExpiredMessage != null || sessionInvalidatedMessage != null;
 
             if (forcedLogout)
             {
-                // Always sign out and clear session when we know this is a timeout/forced logout
+                // Always sign out and clear session when server indicated timeout/forced logout (TempData)
                 if (User.Identity?.IsAuthenticated == true)
                     await _signInManager.SignOutAsync();
                 HttpContext.Session.Clear();
@@ -300,17 +290,24 @@ namespace WebApplication1.Controllers
                 ClearAuthCookie(HttpContext);
             }
 
-            if (sessionExpired)
-            {
-                TempData["SessionExpired"] = "Your session has expired. Please login again.";
-            }
+            // Restore messages for the view (TempData read above consumes them)
+            if (sessionExpiredMessage != null)
+                TempData["SessionExpired"] = sessionExpiredMessage;
+            if (sessionInvalidatedMessage != null)
+                TempData["SessionInvalidated"] = sessionInvalidatedMessage;
 
-            if (sessionInvalidated)
-            {
-                TempData["SessionInvalidated"] = "You have been signed out because you logged in from another device or browser.";
-            }
-            
             return View();
+        }
+
+        /// <summary>
+        /// Called by SingleSessionMiddleware when the current session was invalidated (e.g. login from another device).
+        /// Sets TempData server-side and redirects to Login so the sign-out decision is not based on user-controlled input.
+        /// </summary>
+        [HttpGet]
+        public IActionResult SessionInvalidated()
+        {
+            TempData["SessionInvalidated"] = "You have been signed out because you logged in from another device or browser.";
+            return RedirectToAction(nameof(Login));
         }
 
         /// <summary>
@@ -644,10 +641,7 @@ namespace WebApplication1.Controllers
 
                 try
                 {
-                    await _emailSender.SendEmailAsync(
-                        user.Email!,
-                        "Reset your Ace Job Agency password",
-                        $"Please reset your password by clicking <a href=\"{callbackUrl}\">this secure link</a>. The link will expire after a short time.");
+                    await _emailSender.SendPasswordResetEmailAsync(user.Email!, callbackUrl);
                 }
                 catch (Exception)
                 {

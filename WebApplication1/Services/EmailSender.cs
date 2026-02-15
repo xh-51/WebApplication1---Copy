@@ -5,9 +5,12 @@ namespace WebApplication1.Services
 {
     /// <summary>
     /// SMTP-based email sender. If Smtp:Host is not set, logs to console and skips sending (no exception).
+    /// Do not pass sensitive data (passwords, exception messages, tokens in plain text) in subject or htmlBody
+    /// when using SendEmailAsync; use dedicated methods (e.g. SendPasswordResetEmailAsync) for transactional emails.
     /// </summary>
     public class EmailSender : IEmailSender
     {
+        private const string PasswordResetSubject = "Reset your Ace Job Agency password";
         private readonly IConfiguration _configuration;
         private readonly ILogger<EmailSender> _logger;
 
@@ -15,6 +18,16 @@ namespace WebApplication1.Services
         {
             _configuration = configuration;
             _logger = logger;
+        }
+
+        /// <summary>
+        /// Sends a password-reset email using a fixed template. The callback URL is sent only to the intended recipient.
+        /// This avoids passing sensitive data (reset link) through a generic channel and limits exposure to the recipient only.
+        /// </summary>
+        public async Task SendPasswordResetEmailAsync(string to, string callbackUrl)
+        {
+            var htmlBody = $"Please reset your password by clicking <a href=\"{WebUtility.HtmlEncode(callbackUrl)}\">this secure link</a>. The link will expire after a short time.";
+            await SendEmailAsync(to, PasswordResetSubject, htmlBody);
         }
 
         public async Task SendEmailAsync(string to, string subject, string htmlBody)
@@ -59,7 +72,7 @@ namespace WebApplication1.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to send email to {To}, subject: {Subject}.", to, subject);
-                throw;
+                throw new InvalidOperationException("Failed to send email. Please try again later.");
             }
         }
     }
