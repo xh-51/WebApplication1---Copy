@@ -169,6 +169,22 @@ namespace WebApplication1.Controllers
                         return View(model);
                     }
 
+                    // MIME type validation - reject if Content-Type does not match allowed types for extension
+                    var allowedPdfMimeTypes = new[] { "application/pdf" };
+                    var allowedDocxMimeTypes = new[] {
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        "application/octet-stream" // some clients send this for .docx
+                    };
+                    var contentType = (model.Resume.ContentType ?? "").Split(';')[0].Trim().ToLowerInvariant();
+                    bool mimeValid = fileExtension == ".pdf"
+                        ? allowedPdfMimeTypes.Contains(contentType)
+                        : allowedDocxMimeTypes.Contains(contentType);
+                    if (!mimeValid)
+                    {
+                        ModelState.AddModelError("Resume", "File type does not match the selected file. Only .docx and .pdf are allowed.");
+                        return View(model);
+                    }
+
                     // Validate file size (5MB max)
                     var maxFileSize = _configuration.GetValue<long>("FileUpload:MaxFileSize", 5242880);
                     if (model.Resume.Length > maxFileSize)
